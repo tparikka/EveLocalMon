@@ -1,0 +1,20 @@
+{
+  "image": "sample-local-nonscrolled-one-neut-one-friendly.png",
+  "calibration": {
+    "listRect": { "x": 310, "y": 72, "width": 132, "height": 546 },
+    "iconX": 314,
+    "nameX": 329,
+    "nameRight": 440,
+    "headerCountRect": { "x": 330, "y": 53, "width": 30, "height": 16 }
+  },
+  "expected": {
+    "phaseFirstFullSlotTop": 78,
+    "occupiedFullRows": 3,
+    "hasPartialRowWithContent": false,
+    "headerMemberCount": 3,
+    "readability": "Full",
+    "counts": { "Friendly": 1, "Enemy": 0, "Neutral": 1, "Unknown": 0, "NoIcon": 1 },
+    "threatTotal": 1,
+    "rowCodes": "-+N"
+  }
+}

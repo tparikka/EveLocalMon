@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>EveLocalMon.App</RootNamespace>
+    <AssemblyName>EveLocalMon</AssemblyName>
+    <ApplicationManifest>App.manifest</ApplicationManifest>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EveLocalMon.Core\EveLocalMon.Core.csproj" />
+    <ProjectReference Include="..\EveLocalMon.Platform.Windows\EveLocalMon.Platform.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Shipped defaults, copied into %APPDATA%\EveLocalMon\templates on first run. -->
+    <None Include="..\..\assets\templates\**\*" Link="assets\templates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

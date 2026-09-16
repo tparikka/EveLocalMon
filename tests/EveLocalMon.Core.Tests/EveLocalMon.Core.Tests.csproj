@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EveLocalMon.Core\EveLocalMon.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Link, don't copy: doc/samples/*.png are the raw captures referenced by pixel
+         coordinates throughout doc/M1-SPEC.md and must never be duplicated or re-saved. -->
+    <None Include="..\..\doc\samples\*.png" Link="Fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Default icon/digit templates live in assets/ so the app can ship them too; linked here
+         rather than duplicated, so there is one canonical copy. -->
+    <None Include="..\..\assets\templates\**\*" Link="Fixtures\templates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

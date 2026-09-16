@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>EveLocalMon.Capture.Cli</RootNamespace>
+    <AssemblyName>evelocalmon-capture</AssemblyName>
+    <ApplicationManifest>App.manifest</ApplicationManifest>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EveLocalMon.Core\EveLocalMon.Core.csproj" />
+    <ProjectReference Include="..\EveLocalMon.Platform.Windows\EveLocalMon.Platform.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

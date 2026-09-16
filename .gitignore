@@ -1,0 +1,25 @@
+## .NET / Visual Studio
+bin/
+obj/
+*.user
+.vs/
+*.suo
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## Build output
+*.dll
+*.exe
+*.pdb
+
+## Test results
+TestResults/
+
+## Capture CLI output (screenshots dumped while calibrating)
+captures/
+
+## OS
+.DS_Store
+Thumbs.db

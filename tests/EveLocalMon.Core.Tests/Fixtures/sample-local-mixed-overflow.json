@@ -1,0 +1,20 @@
+{
+  "image": "sample-local-mixed-overflow.png",
+  "calibration": {
+    "listRect": { "x": 300, "y": 68, "width": 116, "height": 967 },
+    "iconX": 303,
+    "nameX": 318,
+    "nameRight": 414,
+    "headerCountRect": { "x": 320, "y": 44, "width": 30, "height": 16 }
+  },
+  "expected": {
+    "phaseFirstFullSlotTop": 81,
+    "occupiedFullRows": 56,
+    "hasPartialRowWithContent": true,
+    "headerMemberCount": 100,
+    "readability": "Overflow",
+    "counts": { "Friendly": 54, "Enemy": 1, "Neutral": 1, "Unknown": 0, "NoIcon": 0 },
+    "threatTotal": 2,
+    "rowCodes": "GPPPPBBBRGGPBBGPPGBGPBPNGBGBBGPPBBBBBBPBGBPPPBPBBPGBPPPP"
+  }
+}
