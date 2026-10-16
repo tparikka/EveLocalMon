@@ -4,5 +4,6 @@
   { "name": "blue-star", "file": "blue-star.png", "category": "Friendly" },
   { "name": "blue-plus", "file": "blue-plus.png", "category": "Friendly" },
   { "name": "red-minus", "file": "red-minus.png", "category": "Enemy" },
+  { "name": "orange-minus", "file": "orange-minus.png", "category": "Enemy" },
   { "name": "gray-equals", "file": "gray-equals.png", "category": "Neutral" }
 ]

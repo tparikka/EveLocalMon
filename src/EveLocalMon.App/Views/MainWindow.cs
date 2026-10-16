@@ -3,9 +3,13 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using EveLocalMon.App.Rendering;
 using EveLocalMon.App.Services;
+using EveLocalMon.Core.Alerts;
+using EveLocalMon.Core.Audio;
 using EveLocalMon.Core.Imaging;
+using EveLocalMon.Core.Net;
 using EveLocalMon.Core.Reading;
 using EveLocalMon.Core.Settings;
 using EveLocalMon.Platform.Windows;
@@ -21,8 +25,15 @@ public sealed class MainWindow : Window
     private readonly TextBlock _notes = new() { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Gray };
     private readonly TextBlock _rowTable = new() { FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 11 };
     private readonly CalibrationPanel _calibrationPanel = new();
+    private readonly AlertsPanel _alertsPanel = new();
     private readonly Button _startStop = new() { Content = "Start", Width = 90 };
     private readonly NumericUpDown _interval = new() { Minimum = 100, Maximum = 5000, Increment = 100, FormatString = "0", Width = 90 };
+
+    private readonly HttpClient _httpClient = new();
+    private readonly WinmmSoundPlayer _soundPlayer = new();
+    private readonly AlertPresenter _presenter;
+    private readonly AlertDispatcher _dispatcher;
+    private AlertState _alertState = new(new AlertStateOptions());
 
     private AppSettings _settings;
     private TemplateSet _templates;
@@ -30,23 +41,35 @@ public sealed class MainWindow : Window
 
     public MainWindow()
     {
-        Title = "EveLocalMon — region & preview";
-        Width = 1000;
-        Height = 760;
+        Title = "EveLocalMon — region, preview & alerts";
+        Width = 1020;
+        Height = 820;
 
         _settings = _settingsStore.Load(out string? warning);
         string templatesDirectory = _settings.TemplatesDirectory ?? TemplateSeeder.EnsureSeeded();
         _templates = LoadTemplates(templatesDirectory);
         _interval.Value = _settings.PollIntervalMs;
 
+        _presenter = new AlertPresenter(this, () => _settings.Region);
+        _dispatcher = new AlertDispatcher(_soundPlayer, _presenter, new NtfyClient(_httpClient))
+        {
+            Settings = _settings.Alerts,
+        };
+        _dispatcher.ChannelFailed += message => Dispatcher.UIThread.Post(() => _alertsPanel.SetStatus(message));
+
         RenderOptions.SetBitmapInterpolationMode(_preview, BitmapInterpolationMode.None);
         _calibrationPanel.Value = _settings.Calibration;
         _calibrationPanel.Applied += OnCalibrationApplied;
 
+        _alertsPanel.Value = _settings.Alerts;
+        _alertsPanel.Changed += OnAlertSettingsChanged;
+        _alertsPanel.TestRequested += which => _ = TestChannelAsync(which);
+        _alertsPanel.MuteRequested += OnMuteRequested;
+
         Content = BuildLayout();
 
         _loop.Updated += OnMonitorUpdate;
-        Closing += (_, _) => _loop.Dispose();
+        Closing += (_, _) => Shutdown();
 
         SetStatus(warning is not null
             ? warning
@@ -93,6 +116,7 @@ public sealed class MainWindow : Window
             {
                 _status,
                 _notes,
+                _alertsPanel,
                 _calibrationPanel,
                 new TextBlock { Text = "Rows", FontWeight = FontWeight.SemiBold },
                 _rowTable,
@@ -166,7 +190,8 @@ public sealed class MainWindow : Window
 
             if (detection.Calibration is null)
             {
-                SetStatus($"Auto-detect failed ({detection.Confidence}). Adjust the region, or set the numbers by hand.");
+                SetStatus($"⚠ Auto-detect failed. {detection.Notes.FirstOrDefault()} " +
+                    "Re-drag the region around just the member list, or set the numbers by hand.");
                 RenderPreview(frame, null, null);
                 return;
             }
@@ -176,7 +201,19 @@ public sealed class MainWindow : Window
 
             Snapshot snapshot = LocalListReader.Read(frame, detection.Calibration, _templates);
             RenderPreview(frame, snapshot, detection.Calibration);
-            SetStatus($"Detected calibration ({detection.Confidence}) for region {Describe(region)}.", snapshot);
+
+            // A too-wide region is the classic mis-drag: it catches the chat log, whose coloured
+            // text can masquerade as an icon column. Say so before the counts get trusted.
+            string widthWarning = region.Width > 400
+                ? $" ⚠ That region is {region.Width}px wide — a Local member list is usually ~150px. " +
+                  "If the rows below look wrong, re-drag around just the member list."
+                : string.Empty;
+
+            string confidenceWarning = detection.Confidence == DetectionConfidence.Good
+                ? string.Empty
+                : $" ⚠ Confidence {detection.Confidence} — check the numbers before trusting the counts.";
+
+            SetStatus($"Detected calibration for region {Describe(region)}.{confidenceWarning}{widthWarning}", snapshot);
         }
         catch (Exception ex)
         {
@@ -211,6 +248,72 @@ public sealed class MainWindow : Window
         }
     }
 
+    private void OnAlertSettingsChanged(AlertSettings alerts)
+    {
+        _settings = _settings with { Alerts = alerts };
+        _dispatcher.Settings = alerts;
+        _settingsStore.Save(_settings);
+        _alertsPanel.SetStatus("Alert settings applied and saved.");
+    }
+
+    private void OnMuteRequested(TimeSpan? duration)
+    {
+        if (duration is { } window)
+        {
+            _dispatcher.MuteFor(window);
+            _alertsPanel.SetStatus($"Muted until {DateTimeOffset.Now.Add(window):HH:mm:ss} — popups still appear.");
+        }
+        else
+        {
+            _dispatcher.Unmute();
+            _alertsPanel.SetStatus("Unmuted.");
+        }
+    }
+
+    private async Task TestChannelAsync(string channel)
+    {
+        var message = new AlertMessage(
+            AlertKind.ThreatIncreased,
+            "EVE: hostile in Local",
+            "1 red — 1 threat visible (test alert)",
+            AlertPriority.Urgent,
+            DateTimeOffset.Now);
+
+        AlertSettings alerts = _alertsPanel.Value;
+
+        try
+        {
+            switch (channel)
+            {
+                case "sound":
+                    _soundPlayer.Play(AlertTone.BuildWav(alerts.VolumePercent));
+                    _alertsPanel.SetStatus("Sound: played the built-in chime.");
+                    break;
+                case "popup":
+                    _presenter.Present(message);
+                    _alertsPanel.SetStatus("Popup: shown near the watched region.");
+                    break;
+                case "ntfy":
+                    if (string.IsNullOrWhiteSpace(alerts.NtfyTopic))
+                    {
+                        _alertsPanel.SetStatus("ntfy: set a topic first (use Generate topic).");
+                        return;
+                    }
+
+                    bool sent = await new NtfyClient(_httpClient)
+                        .SendAsync(message, new NtfyOptions(alerts.NtfyServer, alerts.NtfyTopic));
+                    _alertsPanel.SetStatus(sent
+                        ? $"ntfy: sent to {alerts.NtfyServer.TrimEnd('/')}/{alerts.NtfyTopic}"
+                        : "ntfy: failed — check the server and topic.");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _alertsPanel.SetStatus($"{channel}: {ex.Message}");
+        }
+    }
+
     private void ToggleMonitoring()
     {
         if (_loop.IsRunning)
@@ -228,6 +331,11 @@ public sealed class MainWindow : Window
 
         int interval = (int)(_interval.Value ?? 500);
         _settings = _settings with { PollIntervalMs = interval };
+
+        // Fresh alert state per run: stale debounce history from a previous session must not fire
+        // an alert the moment monitoring resumes.
+        _alertState = new AlertState(new AlertStateOptions());
+
         _loop.Start(region, _settings.Calibration, _templates, interval);
         _startStop.Content = "Stop";
     }
@@ -244,6 +352,29 @@ public sealed class MainWindow : Window
         SetStatus(_settings.Calibration is null
             ? "Watching (no calibration yet — press \"Re-detect calibration\")."
             : "Watching.", update.Snapshot);
+
+        if (update.Snapshot is { } snapshot)
+        {
+            IReadOnlyList<AlertEvent> events = _alertState.Update(snapshot, DateTimeOffset.Now);
+            if (events.Count > 0)
+            {
+                _ = DispatchAsync(events);
+            }
+        }
+    }
+
+    private async Task DispatchAsync(IReadOnlyList<AlertEvent> events)
+    {
+        try
+        {
+            await _dispatcher.DispatchAsync(events);
+            AlertMessage last = AlertMessageFactory.Create(events[^1]);
+            _alertsPanel.SetStatus($"{last.At.ToLocalTime():HH:mm:ss}  {last.Title} — {last.Body}");
+        }
+        catch (Exception ex)
+        {
+            _alertsPanel.SetStatus($"Alert dispatch failed: {ex.Message}");
+        }
     }
 
     private void RenderPreview(Frame frame, Snapshot? snapshot, Calibration? calibration)
@@ -307,9 +438,21 @@ public sealed class MainWindow : Window
 
     private void SaveSettings()
     {
-        _settings = _settings with { PollIntervalMs = (int)(_interval.Value ?? 500) };
+        _settings = _settings with
+        {
+            PollIntervalMs = (int)(_interval.Value ?? 500),
+            Alerts = _alertsPanel.Value,
+        };
+        _dispatcher.Settings = _settings.Alerts;
         _settingsStore.Save(_settings);
         SetStatus($"Settings saved to {_settingsStore.FilePath}");
+    }
+
+    private void Shutdown()
+    {
+        _loop.Dispose();
+        _soundPlayer.Dispose();
+        _httpClient.Dispose();
     }
 
     private static Frame CaptureOnce(PixelRect region)

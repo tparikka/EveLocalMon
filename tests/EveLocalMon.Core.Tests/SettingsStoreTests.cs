@@ -76,6 +76,28 @@ public class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void AVersion1FileStillLoadsAndGainsDefaultAlertSettings()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(SettingsPath, """
+            {
+              "schemaVersion": 1,
+              "region": { "x": 2200, "y": 300, "width": 140, "height": 900 },
+              "pollIntervalMs": 400
+            }
+            """);
+
+        AppSettings loaded = new SettingsStore(SettingsPath).Load(out string? warning);
+
+        Assert.Null(warning);
+        Assert.Equal(new PixelRect(2200, 300, 140, 900), loaded.Region);
+        Assert.Equal(400, loaded.PollIntervalMs);
+        Assert.True(loaded.Alerts.Threats.Sound);
+        Assert.True(loaded.Alerts.Unreadable.Ntfy);
+        Assert.False(loaded.Alerts.AllClear.Sound);
+    }
+
+    [Fact]
     public void SaveIsAtomicAndLeavesNoTempFile()
     {
         var store = new SettingsStore(SettingsPath);

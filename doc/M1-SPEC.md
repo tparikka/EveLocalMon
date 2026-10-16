@@ -127,9 +127,13 @@ star icon.
 | Name text rows | slot top + 2 … slot top + 11 | sample 2 |
 | Name text start | icon x + 17 | sample 2 (x 331 vs icon 314) |
 | Name text | light gray, core luma ≈ 150–195 (anti-aliased edges lower); background luma ≤ 30 typ., ≤ 60 max (window is translucent — stars/grid show through) | both |
-| Same icon, different samples/backgrounds | mean abs diff ≤ 2.2 | measured |
-| Different icons, closest pair (blue star vs blue plus) | mean abs diff 17.3 | measured |
-| Different icons, other pairs | ≥ 48 | measured |
+| Same icon, across four samples and window backgrounds | mean abs diff **0.6 – 5.1** | measured; the spread comes from EVE's translucent pane letting different backgrounds through |
+| Different icons, closest pair (blue star vs blue plus) | mean abs diff **15.3 – 17.7** | measured |
+| Different icons, other pairs | ≥ 28 (orange vs red minus), ≥ 46 elsewhere | measured |
+
+The `MatchMaxMeanDiff` threshold of 8.0 sits in the gap between those two bands, with ~3 px of
+headroom below and ~7 above. `TemplateSanityTests` pins both edges so a future template or sample
+that narrows the gap fails loudly rather than silently mis-classifying a pilot.
 | **Own pilot** (active client) | **has no icon** | sample 2, "Echo Menoptra" |
 
 ### 2.2 Types
@@ -329,7 +333,8 @@ Sample PNGs are **linked** from `doc/samples` (don't copy):
 
 ### 4.2 Templates to extract (with `evelocalmon-capture crop`)
 
-S1 = `sample-local-mixed-overflow.png`, S2 = `sample-local-nonscrolled-one-neut-one-friendly.png`.
+S1 = `sample-local-mixed-overflow.png`, S2 = `sample-local-nonscrolled-one-neut-one-friendly.png`,
+S3 = `sample-2-hostiles.png`.
 
 | Name | Category | Source | Rect | Code |
 | --- | --- | --- | --- | --- |
@@ -339,12 +344,14 @@ S1 = `sample-local-mixed-overflow.png`, S2 = `sample-local-nonscrolled-one-neut-
 | `red-minus` | Enemy | S1 | 303,217,12,12 | R |
 | `gray-equals` | Neutral | S1 | 303,472,12,12 | N |
 | `blue-plus` | Friendly | S2 | 314,95,12,12 | + |
+| `orange-minus` | Enemy | S3 | 339,66,12,12 | O |
 
-Not yet available (so they currently read as `Unknown`, which alerts — the safe default):
-orange standing, light-blue standing, suspect, criminal, war target. Add them when samples exist.
+Still missing (so they read as `Unknown`, which alerts — the safe default): light-blue (+5)
+standing, suspect, criminal, war target. Add them when samples exist.
 
-Digits: `1` and `0` from S1 header rect, `3` from S2 header rect. Crop each glyph to the
-bounding box of pixels with luma ≥ 120. Save as PNG; `TemplateStore` binarises on load.
+Digits: `1` and `0` from S1's header rect, `3` from S2's, `4` from S3's (365,42,10,13). Crop each
+glyph generously; `TemplateStore` binarises and re-crops to the lit bounding box on load, so a few
+pixels of dark margin are harmless — overlapping a neighbouring glyph is not.
 
 ### 4.3 Fixture JSON
 

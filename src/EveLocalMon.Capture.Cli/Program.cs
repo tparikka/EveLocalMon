@@ -16,6 +16,8 @@ internal static class Program
             "capture" => CaptureCommand.Run(rest),
             "crop" => CropCommand.Run(rest),
             "read" => ReadCommand.Run(rest),
+            "detect" => DetectCommand.Run(rest),
+            "test-alert" => TestAlertCommand.Run(rest),
             _ => Unknown(args[0]),
         };
     }
@@ -34,6 +36,8 @@ internal static class Program
               evelocalmon-capture capture --region x,y,w,h --out <dir> [--interval <sec>=2] [--count <n>]
               evelocalmon-capture crop <src.png> x,y,w,h <out.png>
               evelocalmon-capture read <src.png> <fixture.json> <templatesDir>
+              evelocalmon-capture detect <src.png> [--region x,y,w,h] [--templates <dir>]
+              evelocalmon-capture test-alert [--channel sound|ntfy|all] [--topic <t>] [--server <url>] [--volume <0-100>]
             """);
     }
 }

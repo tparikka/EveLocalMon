@@ -1,0 +1,20 @@
+{
+  "image": "sample-2-hostiles.png",
+  "calibration": {
+    "listRect": { "x": 333, "y": 66, "width": 138, "height": 540 },
+    "iconX": 339,
+    "nameX": 355,
+    "nameRight": 446,
+    "headerCountRect": { "x": 357, "y": 41, "width": 18, "height": 16 }
+  },
+  "expected": {
+    "phaseFirstFullSlotTop": 66,
+    "occupiedFullRows": 14,
+    "hasPartialRowWithContent": false,
+    "headerMemberCount": 14,
+    "readability": "Full",
+    "counts": { "Friendly": 11, "Enemy": 2, "Neutral": 0, "Unknown": 0, "NoIcon": 1 },
+    "threatTotal": 2,
+    "rowCodes": "OPOPPPP-PPPPPP"
+  }
+}

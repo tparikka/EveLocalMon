@@ -45,6 +45,36 @@ public class TemplateSanityTests
         Assert.True(diff <= 2.5, $"cross-sample gray-equals: expected <=2.5, was {diff:F2}");
     }
 
+    /// <summary>
+    /// The 44-pilot sample carries all four icon types at once, over a different window background
+    /// from the ones the templates were cut from. Each template must not merely score well on its
+    /// own icon — it must beat every other template, since that comparison is what actually decides
+    /// a row's category.
+    /// </summary>
+    [Theory]
+    [InlineData("purple-person", 340, 67)]
+    [InlineData("blue-star", 340, 84)]
+    [InlineData("green-star", 340, 135)]
+    [InlineData("orange-minus", 340, 356)]
+    [InlineData("blue-plus", 340, 390)]
+    public void EachTemplateWinsItsOwnIconInTheFortyFourPilotSample(string expectedTemplate, int x, int y)
+    {
+        TemplateSet templates = TemplateStore.Load(FixtureLoader.TemplatesDir);
+        Frame frame = FrameIo.LoadPng(FixtureLoader.Path_("sample-18fleet-1hostile-15friendly-9corp.png"));
+
+        (string Name, double Score)[] ranked = templates.Icons
+            .Select(t => (t.Name, Score: MeanMaskedDiff(frame, x, y, t)))
+            .OrderBy(s => s.Score)
+            .ToArray();
+
+        Assert.Equal(expectedTemplate, ranked[0].Name);
+
+        // Measured across all four samples: 0.6-5.1 within a class, >= 15.3 between classes.
+        // The reader's 8.0 threshold sits in that gap, and these bounds guard both edges of it.
+        Assert.True(ranked[0].Score <= 6.0, $"{expectedTemplate} scored {ranked[0].Score:F1} on its own icon");
+        Assert.True(ranked[1].Score >= 12.0, $"runner-up {ranked[1].Name} was only {ranked[1].Score:F1} away");
+    }
+
     private static double MeanMaskedDiff(Frame frame, int originX, int originY, IconTemplate template)
     {
         int size = template.Image.Width;

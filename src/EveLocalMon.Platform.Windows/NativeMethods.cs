@@ -11,6 +11,10 @@ internal static class NativeMethods
     public const int BI_RGB = 0;
     public const int DIB_RGB_COLORS = 0;
 
+    public const int SND_ASYNC = 0x0001;
+    public const int SND_NODEFAULT = 0x0002;
+    public const int SND_MEMORY = 0x0004;
+
     [StructLayout(LayoutKind.Sequential)]
     public struct BITMAPINFOHEADER
     {
@@ -60,6 +64,9 @@ internal static class NativeMethods
 
     [DllImport("gdi32.dll")]
     public static extern bool DeleteObject(IntPtr hObject);
+
+    [DllImport("winmm.dll", SetLastError = true)]
+    public static extern bool PlaySound(IntPtr pszSound, IntPtr hmod, int fdwSound);
 
     [DllImport("gdi32.dll", SetLastError = true)]
     public static extern bool BitBlt(

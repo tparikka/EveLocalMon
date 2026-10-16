@@ -69,7 +69,11 @@ public class FixtureReaderTests(ITestOutputHelper output)
         RowCategory.NoIcon => '-',
         RowCategory.Unknown => '?',
         RowCategory.Neutral => 'N',
-        RowCategory.Enemy => 'R',
+        RowCategory.Enemy => row.TemplateName switch
+        {
+            "orange-minus" => 'O',
+            _ => 'R',
+        },
         RowCategory.Friendly => row.TemplateName switch
         {
             "green-star" => 'G',

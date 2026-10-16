@@ -78,8 +78,8 @@ reads client memory or sends input to the EVE client.
 | Interface | Windows | macOS (later) |
 | --- | --- | --- |
 | `IScreenCapture` | GDI `BitBlt` from screen DC via P/Invoke (simple, fine at 2 Hz). Upgrade path: Windows.Graphics.Capture to capture the EVE window even when covered. | ScreenCaptureKit (`SCScreenshotManager`, macOS 14+) via a small Swift helper or .NET-macOS bindings. `CGWindowListCreateImage` is obsolete. |
-| `IToastNotifier` | `Microsoft.Toolkit.Uwp.Notifications` `ToastContentBuilder` (works for unpackaged Win32, needs TFM `net10.0-windows10.0.19041.0`). Alternative: Windows App SDK `AppNotificationManager`. | `UNUserNotificationCenter` (requires bundled, signed `.app`). |
-| `ISoundPlayer` | `System.Media.SoundPlayer` (WAV) or NAudio for volume control | `AVAudioPlayer` / `afplay` |
+| `IAlertPresenter` | The app's own always-on-top Avalonia window with `ShowActivated = false`, so it never steals focus. **No notification package**: Windows Focus Assist / Do Not Disturb suppresses native toasts during fullscreen games, i.e. exactly when the alert matters. | The same Avalonia popup — no platform-specific work needed. |
+| `ISoundPlayer` | winmm `PlaySound` P/Invoke over a WAV synthesised in memory — no package, no bundled audio file, and volume works by scaling the samples. | `afplay` / `AVAudioPlayer` |
 
 `INtfyClient` (HttpClient), detector, state machine and config are all platform-neutral.
 
@@ -287,9 +287,10 @@ them.
 ## 5. Alert channels
 
 - **Sound**: bundled WAV + user-selectable file, volume, optional "loop until acknowledged".
-- **Toast**: title "EVE: threat in Local", body e.g. "+1 (1 red, 1 neutral, 0 unknown)".
-  Overflow uses a different title, "EVE: Local unreadable", so it's never confused with a
-  confirmed threat. Later: action buttons ("Mute 5 min").
+- **Popup** (the app's own window, not a native toast — see §2): title "EVE: hostile in Local",
+  body e.g. "+1 (2 red, 1 neutral) — now 3 threats". Unreadable uses a different title,
+  "EVE: Local unreadable", so it can never be confused with a confirmed threat. Appears on the
+  monitor holding the watched region, auto-dismisses, and never takes focus off the game.
 - **ntfy** (ntfy.sh, no auth):
 
   ```http
@@ -316,7 +317,7 @@ them.
 | M0 | ✅ Spike | Solution skeleton + `Capture.Cli`: BitBlt a region every N s and dump PNGs; collect fixtures in game |
 | M1 | ✅ Reader + state | `LocalListReader` (rows, templates, header digits), `AlertState`, fixture-driven xUnit tests passing |
 | M2 | ✅ Picker & preview UI | Avalonia app: drag-select region overlay, auto-detected calibration with manual override, live preview with per-row classification, settings persistence (`doc/M2-SPEC.md`) |
-| M3 | Alerts | Sound, toast, ntfy implementations + console "test alert" command |
+| M3 | ✅ Alerts | Synthesised chime via winmm, always-on-top popup (deliberately **not** a native toast — Focus Assist suppresses those during fullscreen games), ntfy push, per-channel rate limits, mute, CLI `test-alert` (`doc/M3-SPEC.md`) |
 | M4 | Monitoring shell | Tray icon, start/stop, mute, template cropper ("add unknown icon as friendly"), detection history |
 | M5 | Windows release | Velopack installer, autostart, GitHub Actions build + release |
 | M6 | macOS | ScreenCaptureKit capture, Screen Recording permission flow, Retina scaling, notifications, signing/notarization |
@@ -336,6 +337,10 @@ a live Local window.
   explicit alert rather than silently missed.
 - **Unknown-icon alerts** will fire for any friendly icon not yet templated. Expect some
   teaching during the first sessions; the "add as friendly" action makes this quick.
+- **Too-wide regions** are the mis-drag that actually happened: including the chat log gives
+  auto-detect coloured chat text to mistake for an icon column, which inflated the count to 5
+  hostiles when there were 2. Candidates are now validated (doc/M2-SPEC.md §4a) and the app warns
+  when a region is much wider than a member list, but dragging around just the list is still right.
 - **EVE UI changes** in patches can break templates/calibration → keep both user-editable
   and keep the fixture suite current.
 - **DPI:** make sure capture coordinates are physical pixels (Avalonia is per-monitor DPI

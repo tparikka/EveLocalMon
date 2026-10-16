@@ -49,6 +49,10 @@ template score, via `ITestOutputHelper`) — tuning a threshold depends on seein
   multi-targeting plus a runtime-selected `IScreenCapture`.
 - `EveLocalMon.App` builds its UI in C#, not XAML: compiler-checked, no designer to keep in sync,
   and preview overlays are composited into the bitmap so what you see is the pixels the reader saw.
+- **No notification or audio packages.** Alerts use the app's own always-on-top popup, because
+  Windows Focus Assist suppresses native toasts during fullscreen games — the one moment this tool
+  exists for. The chime is a WAV synthesised at runtime and played through winmm `PlaySound`, which
+  also gives a volume control the OS API doesn't. Don't "improve" either into a dependency.
 - Nullable enabled, implicit usings, file-scoped namespaces, `TreatWarningsAsErrors` in Core.
 - Immutable data as `record` / `readonly record struct`; pure functions for detection.
 - Pixel buffers are BGRA8888, top-down, `Stride` bytes per row. Coordinates are physical

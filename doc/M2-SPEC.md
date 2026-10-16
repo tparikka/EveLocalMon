@@ -144,12 +144,26 @@ chroma 40) so the detector and the reader agree on what a pixel is.
 
 **a) Icon column.** For each x, count pixels with `Chroma >= 40` (saturated). Text is gray and the
 neutral icon is gray, so this isolates colour icons. Measured on `sample-local-mixed-overflow.png`:
-columns 303–314 scored 392–668, every other column scored 0 — an unambiguous run. Take the longest
-run of consecutive non-zero columns; require width 8–20 → `IconX` = run start, `IconSize` = run width.
+columns 303–314 scored 392–668, every other column scored 0.
 
-*Fallback (a Local showing only gray/neutral icons):* repeat with "icon-like" (`Luma >= 70 ||
-Chroma >= 40`) restricted to the leftmost 40 px of the region. If that also fails → `Failed`, and
-the panel asks the user to click an icon in the preview instead.
+That cleanliness only holds when the region is the member pane. **Take every run of width 8–20 as a
+*candidate* and validate it, rather than trusting the leftmost** — a region that also caught the
+chat log offers coloured chat text as a column, and taking it turns chat lines into phantom pilots
+(this shipped as a bug: 5 hostiles reported where there were 2). A candidate is turned down when:
+
+| Check | Why | Measured |
+| --- | --- | --- |
+| Fill ≥ 0.6 of each block | Icons are solid blocks; text is mostly background | Real icon runs fill 0.96 (each icon 1.00); chat-text decoys fill 0.40 (0.28–0.43) |
+| \|column width − icon height\| ≤ 3 | Icons are square | A chat decoy measured 20×10 |
+| Pitch ≤ icon size + 8 | EVE's list is 17px for a 12px icon, a 5px gap | A decoy gave 40px pitch for 10px "icons" |
+| Pitch within 10–40 px | Sanity | — |
+
+Each rejection is recorded in `Notes` with its reason, and detection moves to the next candidate,
+so a too-wide region usually still finds the genuine column instead of failing. Only when no
+candidate survives does it return `Failed`, telling the user to drag around just the member list.
+
+*Fallback (a Local showing only gray/neutral icons):* the same candidate walk over "icon-like"
+(`Luma >= 70 || Chroma >= 40`) columns, marked `Partial`.
 
 **b) Row pitch and icon size.** Within the icon column, find vertical runs of icon-like pixels.
 The modal run height is `IconSize` (measured: 12). **Discard runs more than 1 px off that height

@@ -1,3 +1,4 @@
+using EveLocalMon.Core.Alerts;
 using EveLocalMon.Core.Imaging;
 using EveLocalMon.Core.Reading;
 
@@ -10,7 +11,9 @@ namespace EveLocalMon.Core.Settings;
 /// </summary>
 public sealed record AppSettings
 {
-    public const int CurrentSchemaVersion = 1;
+    /// <summary>v2 added the <see cref="Alerts"/> block. A v1 file still loads: the missing block
+    /// simply takes its defaults.</summary>
+    public const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -22,4 +25,6 @@ public sealed record AppSettings
     public int PollIntervalMs { get; init; } = 500;
 
     public string? TemplatesDirectory { get; init; }
+
+    public AlertSettings Alerts { get; init; } = new();
 }

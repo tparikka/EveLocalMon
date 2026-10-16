@@ -16,4 +16,9 @@
     <ProjectReference Include="..\EveLocalMon.Platform.Windows\EveLocalMon.Platform.Windows.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- So `detect` works on a screenshot without being told where the templates live. -->
+    <None Include="..\..\assets\templates\**\*" Link="assets\templates\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

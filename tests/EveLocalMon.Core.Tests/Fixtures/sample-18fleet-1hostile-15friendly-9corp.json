@@ -1,0 +1,20 @@
+{
+  "image": "sample-18fleet-1hostile-15friendly-9corp.png",
+  "calibration": {
+    "listRect": { "x": 0, "y": 67, "width": 475, "height": 927 },
+    "iconX": 340,
+    "nameX": 356,
+    "nameRight": 454,
+    "headerCountRect": { "x": 358, "y": 42, "width": 18, "height": 16 }
+  },
+  "expected": {
+    "phaseFirstFullSlotTop": 67,
+    "occupiedFullRows": 44,
+    "hasPartialRowWithContent": false,
+    "headerMemberCount": 44,
+    "readability": "Full",
+    "counts": { "Friendly": 42, "Enemy": 1, "Neutral": 0, "Unknown": 0, "NoIcon": 1 },
+    "threatTotal": 1,
+    "rowCodes": "PBBPGPPPPGGBPGBBBO-+PPPBPPGGPPBGGGBBPPPBPBBB"
+  }
+}
